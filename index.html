@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NovaCraft 3D Engine — WebGL Game Engine</title>
+  <meta name="description" content="NovaCraft is a powerful browser-based 3D game engine with a visual WebGL editor, entity-component system, physics, and audio." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="editor/editor.css" />
+  
+  <!-- Three.js and OrbitControls CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+  <!-- ── SPLASH SCREEN ── -->
+  <div id="splash" class="splash">
+    <div class="splash-logo">
+      <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+        <polygon points="36,4 68,20 68,52 36,68 4,52 4,20" fill="none" stroke="url(#hex-grad)" stroke-width="2"/>
+        <polygon points="36,14 58,26 58,46 36,58 14,46 14,26" fill="url(#inner-grad)" opacity="0.15"/>
+        <path d="M24 36 L36 22 L48 36 L36 50 Z" fill="url(#diamond-grad)"/>
+        <circle cx="36" cy="36" r="4" fill="#fff"/>
+        <defs>
+          <linearGradient id="hex-grad" x1="4" y1="4" x2="68" y2="68">
+            <stop offset="0%" stop-color="#a78bfa"/>
+            <stop offset="100%" stop-color="#38bdf8"/>
+          </linearGradient>
+          <linearGradient id="inner-grad" x1="14" y1="14" x2="58" y2="58">
+            <stop offset="0%" stop-color="#a78bfa"/>
+            <stop offset="100%" stop-color="#38bdf8"/>
+          </linearGradient>
+          <linearGradient id="diamond-grad" x1="24" y1="22" x2="48" y2="50">
+            <stop offset="0%" stop-color="#a78bfa"/>
+            <stop offset="100%" stop-color="#38bdf8"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span class="splash-name">NovaCraft 3D</span>
+      <span class="splash-sub">WebGL Game Engine v2.0</span>
+    </div>
+    <div class="splash-bar-wrap">
+      <div class="splash-bar" id="splashBar"></div>
+    </div>
+    <div class="splash-status" id="splashStatus">Initializing 3D renderer…</div>
+  </div>
+
+  <!-- ── EDITOR LAYOUT ── -->
+  <div id="app" class="app hidden">
+
+    <!-- Top bar -->
+    <header class="topbar" id="topbar">
+      <div class="topbar-left">
+        <div class="engine-logo">
+          <svg width="28" height="28" viewBox="0 0 72 72" fill="none">
+            <polygon points="36,4 68,20 68,52 36,68 4,52 4,20" fill="none" stroke="url(#th)" stroke-width="3"/>
+            <path d="M24 36 L36 22 L48 36 L36 50 Z" fill="url(#td)"/>
+            <circle cx="36" cy="36" r="4" fill="#fff"/>
+            <defs>
+              <linearGradient id="th" x1="4" y1="4" x2="68" y2="68"><stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#38bdf8"/></linearGradient>
+              <linearGradient id="td" x1="24" y1="22" x2="48" y2="50"><stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#38bdf8"/></linearGradient>
+            </defs>
+          </svg>
+          <span>NovaCraft 3D</span>
+        </div>
+        <nav class="topbar-menu">
+          <button class="menu-btn" onclick="EditorMenu.open('file')">File</button>
+          <button class="menu-btn" onclick="EditorMenu.open('edit')">Edit</button>
+          <button class="menu-btn" onclick="EditorMenu.open('scene')">Scene</button>
+          <button class="menu-btn" onclick="EditorMenu.open('help')">Help</button>
+        </nav>
+      </div>
+      <div class="topbar-center">
+        <button id="btnPlay" class="ctrl-btn play" title="Play (F5)" onclick="Editor.play()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button id="btnPause" class="ctrl-btn pause hidden" title="Pause" onclick="Editor.pause()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+        <button id="btnStop" class="ctrl-btn stop" title="Stop (Shift+F5)" onclick="Editor.stop()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
+        </button>
+        <div class="project-name" id="projectName">Demo Platformer 3D</div>
+      </div>
+      <div class="topbar-right">
+        <div class="fps-counter" id="fpsCounter">60 FPS</div>
+        <button class="icon-btn" title="Settings" onclick="Editor.openSettings()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main workspace -->
+    <div class="workspace">
+
+      <!-- Left panel: Scene hierarchy + Assets -->
+      <aside class="panel panel-left" id="panelLeft">
+        <div class="panel-tabs">
+          <button class="tab-btn active" onclick="Editor.switchLeftTab('hierarchy', this)">Scene</button>
+          <button class="tab-btn" onclick="Editor.switchLeftTab('assets', this)">Assets</button>
+        </div>
+
+        <!-- Hierarchy -->
+        <div id="tab-hierarchy" class="tab-content active">
+          <div class="panel-toolbar">
+            <button class="small-btn" onclick="Editor.addEntity()" title="Add Entity">+ Entity</button>
+            <button class="small-btn" onclick="Editor.clearScene()" title="Clear scene">Clear</button>
+          </div>
+          <div id="sceneHierarchy" class="hierarchy-list"></div>
+        </div>
+
+        <!-- Assets -->
+        <div id="tab-assets" class="tab-content">
+          <div class="assets-grid" id="assetsGrid"></div>
+        </div>
+      </aside>
+
+      <!-- Center: Viewport -->
+      <main class="viewport-area" id="viewportArea">
+        <div class="viewport-toolbar">
+          <div class="tool-group">
+            <button id="toolSelect" class="tool-btn active" title="Orbit Control (Q)" onclick="Editor.setTool('select')">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.25z"/></svg>
+            </button>
+            <button id="toolMove" class="tool-btn" title="Move (W)" onclick="Editor.setTool('move')">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/></svg>
+            </button>
+            <button id="toolScale" class="tool-btn" title="Scale (E)" onclick="Editor.setTool('scale')">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 11V3h-8l3.29 3.29-10 10L3 13v8h8l-3.29-3.29 10-10z"/></svg>
+            </button>
+          </div>
+          <div class="snap-controls">
+            <label class="snap-label">
+              <input type="checkbox" id="snapGrid" checked onchange="Editor.toggleSnap(this.checked)" />
+              Snap
+            </label>
+            <select id="snapSize" class="snap-select" onchange="Editor.setSnapSize(parseFloat(this.value))">
+              <option value="0.25">0.25m</option>
+              <option value="0.5" selected>0.5m</option>
+              <option value="1">1.0m</option>
+              <option value="2">2.0m</option>
+            </select>
+          </div>
+          <div class="zoom-controls">
+            <button class="small-btn" onclick="Editor.zoom(-1)">−</button>
+            <span id="zoomLabel" class="zoom-label">Dist</span>
+            <button class="small-btn" onclick="Editor.zoom(1)">+</button>
+            <button class="small-btn" onclick="Editor.resetZoom()">Reset View</button>
+          </div>
+        </div>
+        <div class="viewport-container" id="viewportContainer">
+          <div id="editorCanvas3D" style="width:100%; height:100%;"></div>
+          <div id="gameCanvas3D" class="hidden" style="width:100%; height:100%;"></div>
+          <div class="viewport-overlay hidden" id="playOverlay">
+            <span class="play-indicator">▶ PLAYING 3D</span>
+          </div>
+        </div>
+        <div class="viewport-status">
+          <span id="cursorPos">0, 0, 0</span>
+          <span id="selectionInfo"></span>
+          <span id="entityCount">0 entities</span>
+        </div>
+      </main>
+
+      <!-- Right panel: Inspector -->
+      <aside class="panel panel-right" id="panelRight">
+        <div class="panel-tabs">
+          <button class="tab-btn active" onclick="Editor.switchRightTab('inspector', this)">Inspector</button>
+          <button class="tab-btn" onclick="Editor.switchRightTab('settings', this)">Settings</button>
+        </div>
+        <div id="tab-inspector" class="tab-content active">
+          <div id="inspector" class="inspector-content">
+            <div class="inspector-empty">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="32" height="32" opacity="0.3"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+              <p>Select an entity<br/>to inspect its properties</p>
+            </div>
+          </div>
+        </div>
+        <div id="tab-settings" class="tab-content">
+          <div class="settings-content" id="sceneSettings">
+            <div class="settings-group">
+              <label class="settings-label">Gravity X</label>
+              <input type="number" class="settings-input" id="gravityX" value="0" step="0.1" onchange="Editor.updatePhysics()"/>
+            </div>
+            <div class="settings-group">
+              <label class="settings-label">Gravity Y</label>
+              <input type="number" class="settings-input" id="gravityY" value="-9.81" step="0.1" onchange="Editor.updatePhysics()"/>
+            </div>
+            <div class="settings-group">
+              <label class="settings-label">Gravity Z</label>
+              <input type="number" class="settings-input" id="gravityZ" value="0" step="0.1" onchange="Editor.updatePhysics()"/>
+            </div>
+            <div class="settings-group">
+              <label class="settings-label">Background</label>
+              <input type="color" class="settings-color" id="bgColor" value="#05050c" onchange="Editor.setBgColor(this.value)"/>
+            </div>
+            <div class="settings-group">
+              <label class="settings-label">Ambient Light</label>
+              <input type="color" class="settings-color" id="ambientColor" value="#222233" onchange="Editor.updateGlobalLights()"/>
+            </div>
+            <div class="settings-group">
+              <label class="settings-label">Show Grid</label>
+              <input type="checkbox" id="showGrid" checked onchange="Editor.toggleGrid(this.checked)"/>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Bottom panel: Console + Timeline -->
+    <div class="panel-bottom" id="panelBottom">
+      <div class="panel-tabs">
+        <button class="tab-btn active" onclick="Editor.switchBottomTab('console', this)">Console</button>
+        <button class="tab-btn" onclick="Editor.switchBottomTab('scripting', this)">Scripting</button>
+        <button class="clear-log-btn" onclick="Editor.clearConsole()">Clear</button>
+      </div>
+      <div id="tab-console" class="tab-content active">
+        <div id="consoleLog" class="console-log"></div>
+      </div>
+      <div id="tab-scripting" class="tab-content">
+        <div class="script-editor-wrap">
+          <div class="script-toolbar">
+            <select id="scriptEntitySelect" class="snap-select" onchange="Editor.loadEntityScript(this.value)">
+              <option value="">— Select entity —</option>
+            </select>
+            <button class="small-btn" onclick="Editor.saveScript()">Save Script</button>
+            <button class="small-btn" onclick="Editor.runScript()">Run</button>
+          </div>
+          <textarea id="scriptEditor" class="script-textarea" spellcheck="false" placeholder="// Write 3D entity script here
+// Available APIs:
+//   this.entity — the current entity
+//   this.engine — engine instance
+//   Engine.input — keyboard/mouse input
+//   Engine.audio — play sounds
+//   Engine.scene — scene management
+//
+// Lifecycle hooks:
+//   onStart()  — called once when scene starts
+//   onUpdate(dt)  — called every frame
+//   onCollide(other)  — called on collision
+
+function onStart() {
+  console.log('Entity started:', this.entity.name);
+}
+
+function onUpdate(dt) {
+  // Use input.isDown('KeyW') to detect movement
+}
+"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resize handles -->
+    <div class="resize-handle resize-left" id="resizeLeft"></div>
+    <div class="resize-handle resize-right" id="resizeRight"></div>
+    <div class="resize-handle resize-bottom" id="resizeBottom"></div>
+  </div>
+
+  <!-- Dropdown menu -->
+  <div id="dropdownMenu" class="dropdown-menu hidden"></div>
+
+  <!-- Context menu -->
+  <div id="contextMenu" class="context-menu hidden"></div>
+
+  <!-- Modal backdrop -->
+  <div id="modalBackdrop" class="modal-backdrop hidden"></div>
+  <div id="modal" class="modal hidden"></div>
+
+  <!-- Toast notifications -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Engine core -->
+  <script src="engine/core/EventEmitter.js"></script>
+  <script src="engine/core/Transform.js"></script>
+  <script src="engine/core/Entity.js"></script>
+  <script src="engine/core/Scene.js"></script>
+  <script src="engine/core/Engine.js"></script>
+  <script src="engine/systems/InputSystem.js"></script>
+  <script src="engine/systems/PhysicsSystem.js"></script>
+  <script src="engine/systems/RenderSystem.js"></script>
+  <script src="engine/systems/AudioSystem.js"></script>
+  <script src="engine/systems/ScriptSystem.js"></script>
+  <script src="engine/systems/AnimationSystem.js"></script>
+  <script src="engine/components/index.js"></script>
+  <script src="engine/AssetLoader.js"></script>
+
+  <!-- Editor -->
+  <script src="editor/Editor.js"></script>
+  <script src="editor/EditorMenu.js"></script>
+  <script src="editor/Inspector.js"></script>
+  <script src="editor/Viewport.js"></script>
+
+  <!-- Demo scene -->
+  <script src="demo/DemoScene.js"></script>
+  <script src="editor/boot.js"></script>
+</body>
+</html>
